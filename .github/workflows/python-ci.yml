@@ -22,7 +22,7 @@ name: "Python CI"
 on:
   push:
     branches:
-    - 'main'
+    - 'li-0.11'
   pull_request:
     paths:
     - '**'                              # Include all files and directories in the repository by default.

@@ -22,7 +22,7 @@ name: "Python CI Docs"
 on:
   push:
     branches:
-      - 'main'
+      - 'li-0.11'
   pull_request:
 
 
