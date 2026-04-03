@@ -1,0 +1,74 @@
+name: "Publish to JFrog"
+
+on:
+  push:
+    branches:
+      - 'li-0.11'
+
+concurrency:
+  group: jfrog-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      VERSION: ${{ steps.get-version.outputs.VERSION }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install UV
+        uses: astral-sh/setup-uv@v7
+
+      - name: Get initial version from pyproject.toml
+        id: initial-version
+        run: echo "VERSION=$(uv version --short)" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.69.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
+          INITIAL_VERSION: ${{ steps.initial-version.outputs.VERSION }}
+
+      - name: Get the latest tag
+        id: get-version
+        run: |
+          latest_tag=$(git describe --tags --abbrev=0)
+          VERSION=${latest_tag#v}
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Publishing version ${VERSION}"
+
+  build:
+    needs: tag
+    uses: ./.github/workflows/pypi-build-artifacts.yml
+    with:
+      VERSION: ${{ needs.tag.outputs.VERSION }}
+
+  publish:
+    name: Publish to JFrog Artifactory
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all the artifacts
+        uses: actions/download-artifact@v7
+        with:
+          merge-multiple: true
+          path: dist/
+
+      - name: Publish to JFrog Artifactory PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://linkedin.jfrog.io/artifactory/api/pypi/openhouse-pypi
+          user: ${{ secrets.JFROG_USERNAME }}
+          password: ${{ secrets.JFROG_PYPI_API_TOKEN }}
+          verbose: true
