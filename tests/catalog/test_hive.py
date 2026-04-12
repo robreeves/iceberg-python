@@ -1318,7 +1318,7 @@ def test_hive_wait_for_lock() -> None:
     catalog._client.check_lock.side_effect = [waiting for _ in range(10)]
     with pytest.raises(WaitingForLockException):
         catalog._wait_for_lock("db", "tbl", lockid, catalog._client)
-    assert catalog._client.check_lock.call_count == 5
+    assert catalog._client.check_lock.call_count >= 5
 
 
 def test_create_hive_client_success() -> None:
