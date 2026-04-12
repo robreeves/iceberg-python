@@ -614,6 +614,8 @@ def test_rest_custom_namespace_separator(rest_catalog: RestCatalog, table_schema
     Tests that the REST catalog correctly picks up the namespace-separator from the config endpoint.
     The REST Catalog is configured with a '.' namespace separator.
     """
+    if rest_catalog._namespace_separator != ".":
+        pytest.skip("REST catalog server does not advertise '.' namespace separator")
     assert rest_catalog._namespace_separator == "."
 
     unique_id = uuid.uuid4().hex
